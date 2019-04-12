@@ -1,0 +1,191 @@
+CREATE TABLE StaffMember
+(
+StaffNo char(5) PRIMARY KEY,
+ManagerStaffNo char(5) REFERENCES StaffMember (StaffNo),
+Title varchar2(35),
+FirstName varchar2(35),
+LastName varchar2(35),
+DOB date NOT NULL,
+Email varchar2(78),
+Telephone varchar2(35),
+FirstLine varchar2(78),
+Town varchar2(35),
+County varchar2(35),
+PostCode varchar2(35),
+NatInsNum varchar2(35) NOT NULL UNIQUE
+);
+
+
+CREATE TABLE absence
+(
+AbsenceNo char(5) PRIMARY KEY,
+StaffNo char(5) NOT NULL REFERENCES StaffMember (StaffNo) ON DELETE CASCADE,
+StartDate date NOT NULL,
+EndDate date NOT NULL,
+AbsenceReason varchar2(300) NOT NULL
+);
+
+
+CREATE TABLE MonthlyPayment
+(
+PaymentNo char(5) PRIMARY KEY,
+StaffNo char(5) NOT NULL REFERENCES StaffMember (StaffNo) ON DELETE CASCADE,
+PayDate date NOT NULL,
+GrossPay number(11,2) NOT NULL,
+Tax number(11,2) NOT NULL,
+NatInsurance number(11,2) NOT NULL,
+AbsenceDeductions number(11,2)
+);
+
+
+CREATE TABLE Academic
+(
+StaffNo char(5) PRIMARY KEY REFERENCES StaffMember(StaffNo) ON DELETE CASCADE,
+Salary number(11,2) NOT NULL
+); 
+
+CREATE TABLE Department
+(
+DepartmentNo char(5) PRIMARY KEY,
+Name varchar2(35) NOT NULL,
+Description varchar2(300),
+Budget number(11, 2) NOT NULL,
+Salary number(11, 2) NOT NULL
+);
+
+
+CREATE TABLE NonAcademic
+(
+StaffNo char(5) PRIMARY KEY REFERENCES StaffMember (StaffNo) ON DELETE CASCADE,
+DepartmentNo char(5) NOT NULL REFERENCES Department (DepartmentNo) ON DELETE CASCADE
+);
+
+
+CREATE TABLE Skills
+(
+SkillNo char(5) PRIMARY KEY,
+Name varchar2(35) NOT NULL,
+Description varchar2(300),
+MonthlyBonus number(11, 2) NOT NULL
+);
+
+
+CREATE TABLE Staff_Skills
+(
+SkillNo char(5),
+StaffNo char(5),
+PRIMARY KEY (SkillNo, StaffNo),
+FOREIGN KEY (SkillNo) REFERENCES Skills (SkillNo) ON DELETE CASCADE,
+FOREIGN KEY (StaffNo) REFERENCES NonAcademic (StaffNo) ON DELETE CASCADE
+);
+
+
+CREATE TABLE Curriculum
+(
+CurriculumNo char(5) PRIMARY KEY,
+Name varchar2(35) NOT NULL,
+Description varchar2(300)
+);
+
+
+CREATE TABLE Course
+(
+CourseNo char(5) PRIMARY KEY,
+CurriculumNo char(5) NOT NULL REFERENCES Curriculum (CurriculumNo),
+StaffNo char(5) NOT NULL REFERENCES Academic (StaffNo),
+Name varchar2(35) NOT NULL,
+Description varchar2(300)
+);
+
+
+CREATE TABLE Module
+(
+ModuleNo char(5) PRIMARY KEY,
+CourseNo char(5) NOT NULL REFERENCES Course (CourseNo) ON DELETE CASCADE,
+StaffNo char(5) NOT NULL REFERENCES Academic (StaffNo),
+Name varchar2(35) NOT NULL,
+Description varchar2(300)
+);
+
+
+CREATE TABLE Lesson
+(
+LessonNo char(5) PRIMARY KEY,
+ModuleNo char(5) NOT NULL REFERENCES Module (ModuleNo) ON DELETE CASCADE,
+DateTime date NOT NULL
+);
+
+
+CREATE TABLE StudentCode
+(
+Code char(5) PRIMARY KEY,
+Description varchar2(300),
+FeeCost number(11, 2) NOT NULL
+);
+
+
+CREATE TABLE Student
+(
+StudentNo char(5) PRIMARY KEY,
+CourseNo char(5) NOT NULL REFERENCES Course (CourseNo),
+Code char(5) NOT NULL REFERENCES StudentCode (Code),
+Title varchar2(35),
+FirstName varchar2(35),
+LastName varchar2(35),
+DOB date NOT NULL,
+Email varchar2(78),
+Telephone varchar2(35),
+FirstLine varchar2(78),
+Town varchar2(35),
+County varchar2(35),
+PostCode varchar2(35),
+FeesPaid number(11,2)
+);
+
+
+CREATE TABLE Meeting
+(
+MeetingNo char(5) PRIMARY KEY,
+StudentNo char(5) NOT NULL REFERENCES Student (StudentNo) ON DELETE CASCADE,
+StaffNo char(5) NOT NULL REFERENCES NonAcademic (StaffNo) ON DELETE CASCADE,
+Purpose varchar2(35) NOT NULL,
+Location varchar2(35),
+DateTime date NOT NULL,
+Comments varchar2(300)
+);
+
+
+CREATE TABLE ForeignStudent
+(
+StudentNo char(5) PRIMARY KEY REFERENCES Student (StudentNo) ON DELETE CASCADE,
+Nationality varchar2(35) NOT NULL,
+VisaNo varchar2(35) NOT NULL UNIQUE,
+PassportNo varchar2(35) NOT NULL
+);
+
+
+CREATE TABLE DistanceStudent
+(
+StudentNo char(5) PRIMARY KEY REFERENCES Student (StudentNo) ON DELETE CASCADE,
+AcademicTutorNo char(5) NOT NULL REFERENCES Academic (StaffNo),
+PastoralTutorNo char(5) NOT NULL REFERENCES NonAcademic (StaffNo)
+);
+
+
+CREATE TABLE HomeStudent
+(
+StudentNo char(5) PRIMARY KEY REFERENCES Student (StudentNo) ON DELETE CASCADE,
+LockerNo char(5) NOT NULL UNIQUE,
+KeyDepositPaid char(1)
+);
+
+
+CREATE TABLE Attendance
+(
+LessonNo char(5),
+StudentNo char(5),
+AttendanceCode char(2),
+PRIMARY KEY (LessonNo, StudentNo),
+FOREIGN KEY (LessonNo) REFERENCES Lesson (LessonNo) ON DELETE CASCADE,
+FOREIGN KEY (StudentNo) REFERENCES Student (StudentNo) ON DELETE CASCADE
+);

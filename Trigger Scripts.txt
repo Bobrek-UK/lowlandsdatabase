@@ -1,0 +1,76 @@
+CREATE TRIGGER Staff_Age_Check
+BEFORE INSERT OR UPDATE ON StaffMember
+FOR EACH ROW
+BEGIN
+    IF :NEW.DOB >  add_months(sysdate , -12*18)  THEN
+       RAISE_APPLICATION_ERROR(-20001, 'Employee must be at least 18 years old');
+    END IF;
+END;
+/
+
+
+CREATE TRIGGER Student_Age_Check
+BEFORE INSERT OR UPDATE ON Student
+FOR EACH ROW
+BEGIN
+    IF :NEW.DOB >  add_months(sysdate , -12*16)  THEN
+       RAISE_APPLICATION_ERROR(-20001, 'Student must be at least 16 years old');
+    END IF;
+END;
+/
+
+
+CREATE OR REPLACE TRIGGER Student_Added_to_Course
+AFTER INSERT ON HomeStudent
+FOR EACH ROW
+DECLARE 
+CURSOR applicable_lessons
+IS
+   Select Student.studentNo, Lesson.LessonNo
+   FROM
+   Student, Lesson, Course, Module
+   WHERE
+   Student.StudentNo = :new.studentNo
+   AND
+   Student.CourseNo = Course.CourseNo
+   AND
+   Course.CourseNo = Module.CourseNo
+   AND
+   Lesson.ModuleNo = Module.ModuleNo;
+BEGIN
+ FOR I IN applicable_lessons
+ LOOP
+ INSERT INTO Attendance (StudentNo, LessonNo, AttendanceCode)
+ VALUES (I.studentNo, I.LessonNo, 'T');
+  END LOOP;
+END;
+/
+   
+
+
+
+CREATE OR REPLACE TRIGGER Lesson_Added_to_Course
+AFTER INSERT ON Lesson
+FOR EACH ROW
+DECLARE 
+CURSOR applicable_students
+IS
+   Select Student.studentNo
+   FROM
+   HomeStudent, Student, Course, Module
+   WHERE
+   module.ModuleNo = :new.ModuleNo
+   AND
+   Course.CourseNo = Module.CourseNo
+   AND
+   Student.CourseNo = Course.CourseNo
+   AND
+   HomeStudent.StudentNo = Student.StudentNo;
+BEGIN
+ FOR I IN applicable_students
+ LOOP
+ INSERT INTO Attendance (StudentNo, LessonNo, AttendanceCode)
+ VALUES (I.studentNo, :new.LessonNo, 'T');
+  END LOOP;
+END;
+/

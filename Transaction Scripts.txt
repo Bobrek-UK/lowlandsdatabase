@@ -1,0 +1,95 @@
+ALTER SESSION SET NLS_DATE_FORMAT = 'DD-MM-YYYY HH24:MI:SS';
+
+SET TRANSACTION NAME 'Add new course and academic staff member';
+LOCK TABLE StaffMember, Academic, Course, Module IN EXCLUSIVE MODE;
+
+INSERT INTO StaffMember 
+      (StaffNo, ManagerStaffNo, Title, FirstName, LastName, DOB, Email, Telephone,
+        FirstLine, Town, County, PostCode, NatInsNum) 
+VALUES 
+      (10101, 10064, 'Mr', 'Luke', 'Skywalker', '25-09-1951', 'maytheforcebewithyou@thelasthope.com', '', 
+        'Skywalker Moisture Farm', '', 'Tatooine', 'SW1 1LS', 'D4723103E');
+
+INSERT INTO Academic
+      (StaffNo, Salary)
+VALUES
+      (10101, 45000);
+
+INSERT INTO Course 
+      (CourseNo, CurriculumNo, StaffNo, Name, Description)
+VALUES
+      ('C0006', 'CU001' ,10101, 'Rebel Alliance Training' , 'For Alderaan' );
+
+INSERT INTO Module
+      (ModuleNo, CourseNo, StaffNo, Name, Description)
+VALUES
+      ( 'M0031','C0006' ,10101 , 'Jedi Training' , 'Use the force and stuff' );
+INSERT INTO Module
+      (ModuleNo, CourseNo, StaffNo, Name, Description)
+VALUES
+      ( 'M0032','C0006' , 10003, 'Lightsaber Maintenance', 'Ensure you always have a weapon' );
+INSERT INTO Module
+      (ModuleNo, CourseNo, StaffNo, Name, Description)
+VALUES
+      ( 'M0033','C0006' , 10005 , 'Advanced Robotics' , 'Build your very own C3PO');
+INSERT INTO Module
+      (ModuleNo, CourseNo, StaffNo, Name, Description)
+VALUES
+      ( 'M0034','C0006' , 10002, 'X-Wing Piloting' , 'Flight patterns and design flaw exploitation' );
+
+COMMIT;
+
+SET TRANSACTION NAME 'Calculate Wages';
+LOCK TABLE MonthlyPayment IN EXCLUSIVE MODE;
+
+CREATE OR REPLACE VIEW TempAbsenceCheck AS
+SELECT
+    StaffNo, Sum(to_number(EndDate - StartDate)) AS "Unpaid days"
+FROM
+    Absence
+WHERE
+    (Absence.EndDate - Absence.StartDate) >= 3
+AND
+    to_date('31-01-2018') < Absence.EndDate 
+AND
+    Absence.EndDate < to_date('28-02-2018')
+GROUP BY
+    StaffNo;
+
+DECLARE
+CURSOR support_staff_salary
+IS
+SELECT
+   rownum, StaffMember.StaffNo AS "ID", StaffMember.FirstName || ' ' || StaffMember.LastName AS "Name",
+   Department.Name AS "Department",
+   Sum(Skills.MonthlyBonus) + AVG(Department.Salary) AS "Total Salary",
+   TempAbsenceCheck."Unpaid days"
+FROM
+   StaffMember
+INNER JOIN NonAcademic ON
+   StaffMember.StaffNo = NonAcademic.StaffNo
+INNER JOIN Department ON
+   NonAcademic.DepartmentNo = Department.DepartmentNo
+INNER JOIN Staff_Skills ON
+   NonAcademic.StaffNo = Staff_Skills.StaffNo
+INNER JOIN Skills ON
+   Skills.SkillNo = Staff_Skills.SkillNo
+LEFT JOIN TempAbsenceCheck ON
+   StaffMember.StaffNo = TempAbsenceCheck.StaffNo
+GROUP BY 
+   StaffMember.StaffNo, StaffMember.FirstName, StaffMember.LastName, Department.Name, rownum, TempAbsenceCheck."Unpaid days"
+ORDER BY
+   rownum;
+BEGIN
+FOR I IN support_staff_salary
+LOOP
+INSERT INTO MonthlyPayment (PaymentNo, StaffNo, GrossPay, PayDate, Tax, NatInsurance, AbsenceDeductions) 
+VALUES ('P' || to_char(I.rownum+ 1149), I."ID", I."Total Salary"/12, '28-02-2018',
+               ((I."Total Salary"/12) - (I."Total Salary" / 365 * nvl(I."Unpaid days", 0)))/5, 
+               ((I."Total Salary"/12) - (I."Total Salary" / 365 * nvl(I."Unpaid days", 0)))/12, 
+                  I."Total Salary" / 365 * I."Unpaid days");
+END LOOP;
+END;
+/
+
+COMMIT;

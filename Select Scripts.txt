@@ -1,0 +1,191 @@
+COLUMN "Module ID" FORMAT A10;
+SELECT * FROM ModuleList;
+
+
+COLUMN "Key Paid?" FORMAT A10;
+COLUMN "Locker Num" FORMAT A10;
+SELECT * FROM HomeStudentView
+WHERE "Code" = 'FI';
+   
+
+COLUMN "Stud ID" FORMAT A10;
+SELECT * FROM DistanceStudentView
+WHERE "Code" = 'DI';
+
+
+COLUMN "Appoint. No" FORMAT A13;
+SELECT
+   Meeting.MeetingNo AS "Appoint. No", To_Char(Meeting.DateTime, 'DD-MON-YY') AS "Date",
+   To_Char(Meeting.DateTime, 'HH24:MI') AS "Time",
+   Meeting.Location AS "Location", Meeting.Purpose AS "Purpose", 
+   StaffMember.Title || ' ' || StaffMember.FirstName || ' ' || StaffMember.LastName AS "Staff Member Name",
+   Student.Title || ' ' || Student.FirstName || ' ' || Student.LastName AS "Student Name"   
+FROM 
+   Meeting, Student, NonAcademic, StaffMember
+WHERE
+   Meeting.StudentNo = Student.StudentNo
+AND
+   Meeting.StaffNo = NonAcademic.StaffNo
+AND
+   NonAcademic.StaffNo = StaffMember.StaffNo
+ORDER BY
+   Meeting.DateTime;
+
+
+SELECT
+   StaffMember.StaffNo AS "ID", 
+   StaffMember.Title || ' ' || StaffMember.FirstName || ' ' || StaffMember.LastName AS "Name",
+   COUNT(*) AS "Number of Absences"
+FROM StaffMember
+LEFT JOIN Absence
+ON (StaffMember.StaffNo = Absence.StaffNo)
+GROUP BY 
+   StaffMember.StaffNo, StaffMember.Title, StaffMember.FirstName, StaffMember.LastName; 
+
+
+COLUMN "Staff ID" FORMAT A10;
+SELECT 
+   "Staff ID", "Name", to_char (SUM ("Gross Pay" - "Absence Deductions"), 'L999G990') AS "Total Pay To Date"
+FROM StaffPayment
+GROUP BY "Staff ID", "Name"
+ORDER BY "Name";
+
+
+COLUMN "Skill ID" FORMAT A10;
+SELECT 
+    Skills.SkillNo AS "Skill ID", Skills.Name AS "Skill", Skills.MonthlyBonus AS "Monthly Bonus",
+    Count(*) AS "# employees w/ skill"
+FROM
+    Skills, Staff_Skills, NonAcademic
+WHERE
+    Skills.SkillNo = Staff_Skills.SkillNo
+AND
+    NonAcademic.StaffNo = Staff_Skills.StaffNo
+GROUP BY
+    Skills.SkillNo, Skills.Name, Skills.MonthlyBonus;
+
+
+COLUMN "Staff ID" FORMAT A10;
+SELECT
+   StaffMember.StaffNo AS "Staff ID", StaffMember.FirstName || ' ' || StaffMember.LastName AS "Name",
+   Skills.Name AS "Skill"
+FROM
+   StaffMember, NonAcademic, Skills, Staff_Skills
+WHERE
+   StaffMember.StaffNo = NonAcademic.StaffNo
+AND
+   NonAcademic.StaffNo = Staff_Skills.StaffNo
+AND
+   Staff_Skills.SkillNo = Skills.SkillNo;
+
+
+COLUMN "Stud ID" FORMAT A10;
+SELECT 
+   Student.StudentNo AS "Stud ID", Student.FirstName || ' ' || Student.LastName AS "Name",
+   Count (*) AS "# Lessons Attended"
+FROM
+   Student, HomeStudent, Attendance
+WHERE
+   Student.StudentNo = HomeStudent.StudentNo
+AND
+   HomeStudent.StudentNo = Attendance.StudentNo
+AND
+   (Attendance.AttendanceCode = 'P' OR Attendance.AttendanceCode = 'L'
+     OR Attendance.AttendanceCode = 'Q')
+GROUP BY
+   Student.StudentNo, Student.FirstName, Student.LastName
+ORDER BY
+   Student.StudentNo;
+
+
+
+COLUMN "Staff ID" FORMAT A10;
+COLUMN "MANAGER ID" FORMAT A11;
+SELECT
+   a.StaffNo AS "Staff ID", a.FirstName || ' ' || a.LastName AS "Staff Member",
+   b.StaffNo AS "Manager ID", b.FirstName || ' ' || b.LastName AS "Manager"
+FROM 
+   StaffMember a, StaffMember b
+WHERE
+   a.ManagerStaffNo = b.StaffNo
+ORDER BY
+   a.StaffNo;
+
+
+
+COLUMN "Stud ID" FORMAT A10;
+SELECT * FROM StudentTutors;
+
+
+
+
+COLUMN "Stud ID" FORMAT A10;
+COLUMN "Description Code" FORMAT A18;
+SELECT 
+    Student.StudentNo AS "Stud ID", Student.FirstName || ' ' || Student.LastName AS "Name",
+    StudentCode.Code AS "Description Code"
+FROM
+    Student, StudentCode
+WHERE
+    Student.Code = StudentCode.Code
+ORDER BY
+    Student.StudentNo;
+
+
+COLUMN "Stud ID" FORMAT A10;
+COLUMN "Lesson ID" FORMAT A10;
+COLUMN "Attend. Code" FORMAT A13;
+SELECT
+   Student.StudentNo AS "Stud ID", Student.FirstName || ' ' || Student.LastName AS "Name",
+   Lesson.LessonNo AS "Lesson ID", Module.Name AS "Module", Lesson.DateTime AS "Date",
+   Attendance.AttendanceCode AS "Attend. Code"
+FROM
+   Student, HomeStudent, Attendance, Lesson, Module
+WHERE
+   Student.StudentNo = HomeStudent.StudentNo
+AND
+   HomeStudent.StudentNo = Attendance.StudentNo
+AND
+   Attendance.LessonNo = Lesson.LessonNo
+AND
+   Lesson.ModuleNo = Module.ModuleNo
+AND
+   (Attendance.AttendanceCode = 'P' OR Attendance.AttendanceCode = 'L'
+     OR Attendance.AttendanceCode = 'Q')
+ORDER BY
+   Student.StudentNo;
+
+
+
+SELECT
+   StaffMember.StaffNo AS "ID", StaffMember.FirstName || ' ' || StaffMember.LastName AS "Name",
+   Department.Name AS "Department",
+   To_Char(Sum(Skills.MonthlyBonus) + AVG(Department.Salary), 'L999G990') AS "Total Salary"
+FROM
+   StaffMember, NonAcademic, Department, Staff_Skills, Skills
+WHERE
+   StaffMember.StaffNo = NonAcademic.StaffNo
+AND
+   NonAcademic.DepartmentNo = Department.DepartmentNo
+AND
+   NonAcademic.StaffNo = Staff_Skills.StaffNo
+AND
+   Skills.SkillNo = Staff_Skills.SkillNo
+GROUP BY 
+   StaffMember.StaffNo, StaffMember.FirstName, StaffMember.LastName, Department.Name
+ORDER BY
+   Department.Name, StaffMember.StaffNo;
+
+
+
+
+SELECT
+   Student.StudentNo AS "Stud ID", Student.FirstName || ' ' || Student.LastName AS "Name",
+   To_Char(StudentCode.FeeCost, 'L999G990') AS "Course Fees", 
+   To_Char(Student.FeesPaid, 'L999G990') AS "Fees Paid"
+FROM 
+   Student, StudentCode
+WHERE
+   Student.Code = StudentCode.Code
+ORDER BY
+   Student.StudentNo;

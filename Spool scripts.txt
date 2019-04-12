@@ -1,0 +1,212 @@
+Alter Session SET NLS_TERRITORY = "UNITED KINGDOM";
+SET PAGESIZE 35;
+COLUMN "Key Paid?" FORMAT A10;
+COLUMN "Locker Num" FORMAT A10;
+COLUMN "Stud ID" FORMAT A10;
+COLUMN "Course ID" FORMAT A10;
+COLUMN "Module ID" FORMAT A10;
+COLUMN "Staff ID" FORMAT A10;
+COLUMN "Payroll No" FORMAT A13;
+
+SET MARKUP HTML ON
+  SPOOL ON
+    SPOOL E:\AcademicStaffview.html
+      SELECT * FROM AcademicStaffView;
+    SPOOL E:\SupportStaffView.html
+      SELECT * FROM SupportStaffView;
+    SPOOL E:\SkillsView.html
+      SELECT * FROM Skill_View;
+    SPOOL E:\HomeStudentView.html
+      SELECT * FROM HomeStudentView;
+    SPOOL E:\DistanceStudentView.html
+      SELECT * FROM DistanceStudentView;   
+    SPOOL E:\PastoralTutorsForStudent.html
+      SELECT * FROM PastoralTutorsForStudent; 
+   SPOOL E:\AcademicTutorForStudent.html
+      SELECT * FROM AcademicTutorForStudent; 
+   SPOOL E:\StudentTutors.html
+      SELECT * FROM StudentTutors;
+   SPOOL E:\ForeignStudentInfo.html
+      SELECT * FROM ForeignStudentInfo;  
+   SPOOL E:\CourseList.html
+      SELECT * FROM CourseList;
+   SPOOL E:\ModuleList.html
+      SELECT * FROM ModuleList;
+   SPOOL E:\AllTables.html
+      SELECT * FROM USER_TABLES;
+   SPOOL E:\StaffPayments.html
+      SELECT * FROM StaffPayment
+      ORDER BY StaffPayment."Payroll No";
+   SPOOL E:\Database_Results\1_ModuleList.html
+      SELECT * FROM ModuleList
+      ORDER BY ModuleList."Module ID";
+   SPOOL E:\Database_Results\2_FullTimeIntStudents.html
+      SELECT * FROM HomeStudentView
+      WHERE "Code" = 'FI';
+   SPOOL E:\Database_Results\3_DistanceLearningIntStudents.html
+      SELECT * FROM DistanceStudentView
+      WHERE "Code" = 'DI';
+   SPOOL E:\Database_Results\4_Appointments_List.html      
+      COLUMN "Appoint. No" FORMAT A13;
+      SELECT
+      Meeting.MeetingNo AS "Appoint. No", To_Char(Meeting.DateTime, 'DD-MON-YY') AS "Date",
+      To_Char(Meeting.DateTime, 'HH24:MI') AS "Time",
+      Meeting.Location AS "Location", Meeting.Purpose AS "Purpose", 
+      StaffMember.Title || ' ' || StaffMember.FirstName || ' ' || StaffMember.LastName AS "Staff Member Name",
+      Student.Title || ' ' || Student.FirstName || ' ' || Student.LastName AS "Student Name"   
+      FROM 
+      Meeting, Student, NonAcademic, StaffMember
+      WHERE
+      Meeting.StudentNo = Student.StudentNo
+      AND
+      Meeting.StaffNo = NonAcademic.StaffNo
+      AND
+      NonAcademic.StaffNo = StaffMember.StaffNo
+      ORDER BY
+      Meeting.DateTime;
+   SPOOL E:\Database_Results\5_StaffAbsenceCount.html
+      SELECT
+      StaffMember.StaffNo AS "ID", 
+      StaffMember.Title || ' ' || StaffMember.FirstName || ' ' || StaffMember.LastName AS "Name",
+      COUNT(*) AS "Number of Absences"
+      FROM StaffMember
+      LEFT JOIN Absence
+      ON (StaffMember.StaffNo = Absence.StaffNo)
+      GROUP BY 
+      StaffMember.StaffNo, StaffMember.Title, StaffMember.FirstName, StaffMember.LastName; 
+   SPOOL E:\Database_Results\6_StaffTotalPayToDate.html
+     SELECT "Staff ID", "Name", to_char (SUM ("Gross Pay" - "Absence Deductions"), 'L999G990') AS "Total Pay To Date"
+     FROM StaffPayment
+     GROUP BY "Staff ID", "Name"
+     ORDER BY "Name";
+   SPOOL E:\Database_Results\7_SkillAreasList.html
+      COLUMN "Skill ID" FORMAT A10;
+      SELECT 
+      Skills.SkillNo AS "Skill ID", Skills.Name AS "Skill", Skills.MonthlyBonus AS "Monthly Bonus",
+      Count(*) AS "# employees w/ skill"
+      FROM
+      Skills, Staff_Skills, NonAcademic
+      WHERE
+      Skills.SkillNo = Staff_Skills.SkillNo
+      AND
+      NonAcademic.StaffNo = Staff_Skills.StaffNo
+      GROUP BY
+      Skills.SkillNo, Skills.Name, Skills.MonthlyBonus;
+   SPOOL E:\Database_Results\8_SupportStaffListWithSkills.html
+      SELECT
+      StaffMember.StaffNo AS "Staff ID", StaffMember.FirstName || ' ' || StaffMember.LastName AS "Name",
+      Skills.Name AS "Skill"
+      FROM
+      StaffMember, NonAcademic, Skills, Staff_Skills
+      WHERE
+      StaffMember.StaffNo = NonAcademic.StaffNo
+      AND
+      NonAcademic.StaffNo = Staff_Skills.StaffNo
+      AND
+      Staff_Skills.SkillNo = Skills.SkillNo;
+   SPOOL E:\Database_Results\9_FullTimeStudentAttendanceCount.html
+      COLUMN "Stud ID" FORMAT A10;
+      SELECT 
+      Student.StudentNo AS "Stud ID", Student.FirstName || ' ' || Student.LastName AS "Name",
+      Count (*) AS "# Lessons Attended"
+      FROM
+      Student, HomeStudent, Attendance
+      WHERE
+      Student.StudentNo = HomeStudent.StudentNo
+      AND
+      HomeStudent.StudentNo = Attendance.StudentNo
+      AND
+      (Attendance.AttendanceCode = 'P' 
+      OR
+      Attendance.AttendanceCode = 'L'
+      OR
+      Attendance.AttendanceCode = 'Q')
+      GROUP BY
+      Student.StudentNo, Student.FirstName, Student.LastName
+      ORDER BY
+      Student.StudentNo;   
+   SPOOL E:\Database_Results\10_StaffListWithManager.html
+      COLUMN "Staff ID" FORMAT A10;
+      COLUMN "MANAGER ID" FORMAT A11;
+      SELECT
+      a.StaffNo AS "Staff ID", a.FirstName || ' ' || a.LastName AS "Staff Member",
+      b.StaffNo AS "Manager ID", b.FirstName || ' ' || b.LastName AS "Manager"
+      FROM 
+      StaffMember a, StaffMember b
+      WHERE
+      a.ManagerStaffNo = b.StaffNo
+      ORDER BY
+      a.StaffNo;
+   SPOOL E:\Database_Results\11_DistanceLearningListWithTutors.html
+      COLUMN "Stud ID" FORMAT A10;
+      SELECT * FROM StudentTutors;
+   SPOOL E:\Database_Results\12_StudentList.html
+      COLUMN "Stud ID" FORMAT A10;
+      COLUMN "Description Code" FORMAT A18;
+      SELECT 
+      Student.StudentNo AS "Stud ID", Student.FirstName || ' ' || Student.LastName AS "Name",
+      StudentCode.Code AS "Description Code"
+      FROM
+      Student, StudentCode
+      WHERE
+      Student.Code = StudentCode.Code
+      ORDER BY
+      Student.StudentNo;
+   SPOOL E:\Database_Results\13_LessonsAttendedByEachStudent.html
+      COLUMN "Stud ID" FORMAT A10;
+      COLUMN "Lesson ID" FORMAT A10;
+      COLUMN "Attend. Code" FORMAT A13;
+      SELECT
+      Student.StudentNo AS "Stud ID", Student.FirstName || ' ' || Student.LastName AS "Name",
+      Lesson.LessonNo AS "Lesson ID", Module.Name AS "Module", Lesson.DateTime AS "Date",
+      Attendance.AttendanceCode AS "Attend. Code"
+      FROM
+      Student, HomeStudent, Attendance, Lesson, Module
+      WHERE
+      Student.StudentNo = HomeStudent.StudentNo
+      AND
+      HomeStudent.StudentNo = Attendance.StudentNo
+      AND
+      Attendance.LessonNo = Lesson.LessonNo
+      AND
+      Lesson.ModuleNo = Module.ModuleNo
+      AND
+      (Attendance.AttendanceCode = 'P' OR Attendance.AttendanceCode = 'L'
+      OR Attendance.AttendanceCode = 'Q')
+      ORDER BY
+      Student.StudentNo;
+   SPOOL E:\Database_Results\14_SupportStaffListSalaryIncBonuses.html
+      SELECT
+      StaffMember.StaffNo AS "ID", StaffMember.FirstName || ' ' || StaffMember.LastName AS "Name",
+      Department.Name AS "Department", 
+      To_Char(Sum(Skills.MonthlyBonus) + AVG(Department.Salary), 'L999G990') AS "Total Salary"
+      FROM
+      StaffMember, NonAcademic, Department, Staff_Skills, Skills
+      WHERE
+      StaffMember.StaffNo = NonAcademic.StaffNo
+      AND
+      NonAcademic.DepartmentNo = Department.DepartmentNo
+      AND
+      NonAcademic.StaffNo = Staff_Skills.StaffNo
+      AND
+      Skills.SkillNo = Staff_Skills.SkillNo
+      GROUP BY 
+      StaffMember.StaffNo, StaffMember.FirstName, StaffMember.LastName, Department.Name
+      ORDER BY
+      Department.Name, StaffMember.StaffNo;
+   SPOOL E:\Database_Results\15_StudentListCourseFeesAndFeesPaid.html
+      SELECT
+      Student.StudentNo AS "Stud ID", Student.FirstName || ' ' || Student.LastName AS "Name",
+      To_Char(StudentCode.FeeCost, 'L999G990') AS "Course Fees", 
+      To_Char(Student.FeesPaid, 'L999G990') AS "Fees Paid"
+      FROM 
+      Student, StudentCode
+      WHERE
+      Student.Code = StudentCode.Code
+      ORDER BY
+      Student.StudentNo;
+  SPOOL OFF
+SET MARKUP HTML OFF
+
+
+

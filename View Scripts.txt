@@ -1,0 +1,196 @@
+CREATE OR REPLACE VIEW AcademicStaffView AS
+SELECT 
+   Staffmember.StaffNo AS "ID", 
+   StaffMember.Title || ' ' || StaffMember.FirstName || ' ' || StaffMember.LastName AS "Name",
+   StaffMember.DOB, Staffmember.Email AS "Email", StaffMember.Telephone AS "Tel. Number",
+   StaffMember.FirstLine || ', ' || StaffMember.Town || ', ' || StaffMember.County || '. '
+   || StaffMember.PostCode AS "Address",  to_char(Academic.Salary, 'L999G990') AS "Salary",
+   StaffMember.NatInsNum AS "NI Number"
+FROM 
+   StaffMember, Academic
+WHERE 
+   StaffMember.StaffNo = Academic.StaffNo;
+
+
+CREATE OR REPLACE VIEW SupportStaffView AS
+SELECT 
+   Staffmember.StaffNo AS "ID", 
+   StaffMember.Title || ' ' || StaffMember.FirstName || ' ' || StaffMember.LastName AS "Name",
+   StaffMember.DOB, Staffmember.Email AS "Email", StaffMember.Telephone AS "Tel. Number",
+   StaffMember.FirstLine || ', ' || StaffMember.Town || ', ' || StaffMember.County || '. '
+   || StaffMember.PostCode AS "Address", Department.Name AS "Department",
+   to_char(Department.Salary, 'L999G990') AS "Base Salary", StaffMember.NatInsNum AS "NI Number"
+FROM 
+   StaffMember, NonAcademic, Department
+WHERE 
+   StaffMember.StaffNo = NonAcademic.StaffNo
+AND 
+   NonAcademic.DepartmentNo = Department.DepartmentNo;
+
+
+CREATE OR REPLACE VIEW Skill_View AS
+SELECT
+   StaffMember.StaffNo AS "ID", StaffMember.FirstName || ' ' || StaffMember.LastName AS "Name",
+   Skills.Name AS "Skill", to_char(Skills.MonthlyBonus, 'L999G990') AS "Pay Increment"
+FROM
+   StaffMember, NonAcademic, Staff_Skills, Skills
+WHERE
+   StaffMember.StaffNo = NonAcademic.StaffNo
+AND
+   NonAcademic.StaffNo = Staff_Skills.StaffNo
+AND
+   Skills.SkillNo = Staff_Skills.SkillNo
+ORDER BY
+   StaffMember.StaffNo;
+
+
+CREATE OR REPLACE VIEW HomeStudentView AS
+SELECT
+   Student.StudentNo AS "ID", StudentCode.Code AS "Code",
+   Student.Title || ' ' || Student.FirstName || ' ' || Student.LastName AS "Name",
+   Student.DOB, Student.Email AS "Email", Student.Telephone AS "Tel. Number",
+   Student.FirstLine || ', ' || Student.Town || ', ' || Student.County || '. '
+   || Student.PostCode AS "Address", to_char(StudentCode.FeeCost, 'L999G990') AS "Fees Owed",
+   to_char(Student.FeesPaid, 'L999G990') AS "Fees Paid", HomeStudent.LockerNo AS "Locker Num",
+   HomeStudent.KeyDepositPaid AS "Key Paid?"
+FROM
+   HomeStudent, Student, StudentCode
+WHERE
+   StudentCode.Code = Student.Code
+AND
+   Student.StudentNo = HomeStudent.StudentNo
+ORDER BY
+   Student.StudentNo;
+
+COLUMN "Key Paid?" FORMAT A10;
+COLUMN "Locker Num" FORMAT A10;
+
+
+
+CREATE OR REPLACE VIEW DistanceStudentView AS
+SELECT
+   Student.StudentNo AS "Stud ID", StudentCode.Code AS "Code",
+   Student.Title || ' ' || Student.FirstName || ' ' || Student.LastName AS "Name",
+   Student.DOB, Student.Email AS "Email", Student.Telephone AS "Tel. Number",
+   Student.FirstLine || ', ' || Student.Town || ', ' || Student.County || '. '
+   || Student.PostCode AS "Address", to_char(StudentCode.FeeCost, 'L999G990') AS "Fees Owed",
+   to_char(Student.FeesPaid, 'L999G990') AS "Fees Paid"
+FROM
+   DistanceStudent, Student, StudentCode
+WHERE
+   StudentCode.Code = Student.Code
+AND
+   Student.StudentNo = DistanceStudent.StudentNo
+ORDER BY
+   Student.StudentNo;
+
+CREATE OR REPLACE VIEW PastoralTutorsForStudent AS
+SELECT
+   Student.StudentNo AS "Stud ID", 
+   Student.Title || ' ' || Student.FirstName || ' ' || Student.LastName AS "Student Name",
+   StaffMember.Title || ' ' || StaffMember.FirstName || ' ' || StaffMember.LastName AS "Pastoral Tutor"
+FROM
+   Student, DistanceStudent, NonAcademic, StaffMember
+WHERE
+   Student.studentNo = DistanceStudent.studentNo
+AND
+   DistanceStudent.PastoralTutorNo = NonAcademic.StaffNo
+AND
+   StaffMember.StaffNo = NonAcademic.StaffNo
+ORDER BY
+   Student.StudentNo;
+
+COLUMN "Stud ID" FORMAT A10;
+
+
+CREATE OR REPLACE VIEW AcademicTutorForStudent AS
+SELECT
+   Student.StudentNo AS "Stud ID", 
+   Student.Title || ' ' || Student.FirstName || ' ' || Student.LastName AS "Student Name",
+   StaffMember.Title || ' ' || StaffMember.FirstName || ' ' || StaffMember.LastName AS "Academic Tutor"
+FROM
+   Student, DistanceStudent, Academic, StaffMember
+WHERE
+   Student.studentNo = DistanceStudent.studentNo
+AND
+   DistanceStudent.AcademicTutorNo = Academic.StaffNo
+AND
+   StaffMember.StaffNo = Academic.StaffNo
+ORDER BY
+   Student.StudentNo;
+
+
+CREATE OR REPLACE VIEW StudentTutors AS
+SELECT 
+   AcademicTutorForStudent."Stud ID",
+   AcademicTutorForStudent."Student Name",
+   PastoralTutorsForStudent."Pastoral Tutor",
+   AcademicTutorForStudent."Academic Tutor"
+FROM
+   PastoralTutorsForStudent, AcademicTutorForStudent
+WHERE
+   PastoralTutorsForStudent."Stud ID" = AcademicTutorForStudent."Stud ID";
+
+
+CREATE OR REPLACE VIEW ForeignStudentInfo AS
+SELECT
+   Student.StudentNo AS "Stud ID", 
+   Student.Title || ' ' || Student.FirstName || ' ' || Student.LastName AS "Student Name",
+   ForeignStudent.Nationality AS "Citizen of", ForeignStudent.VisaNo AS "Visa Number",
+   ForeignStudent.PassportNo AS "Passport Number"
+FROM
+   Student, ForeignStudent
+WHERE
+   Student.StudentNo = ForeignStudent.StudentNo;
+
+
+CREATE OR REPLACE VIEW CourseList AS
+SELECT
+   Course.courseNo AS "Course ID", Curriculum.Name AS "Curriculum", Course.Name AS "Course Name",
+   Module.ModuleNo AS "Module ID", Module.Name AS "Module Name",
+   StaffMember.FirstName || ' ' || StaffMember.LastName AS "Course Leader"
+FROM
+   Curriculum, Course, Module, Academic, StaffMember
+WHERE
+   Course.CurriculumNo = Curriculum.CurriculumNo
+AND
+   Course.CourseNo = Module.CourseNo
+AND
+   Course.StaffNo = Academic.StaffNo
+AND
+   Academic.StaffNo = StaffMember.StaffNo;
+
+Column "Course ID" FORMAT A10;
+Column "Module ID" FORMAT A10;
+
+
+CREATE OR REPLACE VIEW ModuleList AS
+SELECT
+   Module.ModuleNo AS "Module ID", Module.Name AS "Module Name",
+   StaffMember.FirstName || ' ' || StaffMember.LastName AS "Lecturer",
+   Course.Name AS "Course Name" 
+FROM
+   Module, Course, Academic, StaffMember
+WHERE
+   Module.CourseNo = Course.CourseNo
+AND
+   Module.StaffNo = Academic.StaffNo
+AND
+   Academic.StaffNo = StaffMember.StaffNo;
+   
+
+CREATE OR REPLACE VIEW StaffPayment AS
+SELECT 
+   StaffMember.StaffNo AS "Staff ID", StaffMember.FirstName || ' ' || StaffMember.LastName AS "Name",
+   MonthlyPayment.PaymentNo AS "Payroll No", MonthlyPayment.PayDate AS "Pay Date",
+   MonthlyPayment.GrossPay AS "Gross Pay", MonthlyPayment.AbsenceDeductions AS "Absence Deductions",
+   MonthlyPayment.Tax AS "Tax", MonthlyPayment.NatInsurance AS "NI Contributions", 
+   MonthlyPayment.GrossPay - nvl(MonthlyPayment.AbsenceDeductions,0) - MonthlyPayment.Tax
+   - MonthlyPayment.NatInsurance  AS "Net Pay"
+FROM
+   StaffMember, MonthlyPayment
+WHERE
+   StaffMember.StaffNo = MonthlyPayment.StaffNo;
+
+Column "Staff ID" FORMAT A10;
+Column "Payroll No" FORMAT A13;

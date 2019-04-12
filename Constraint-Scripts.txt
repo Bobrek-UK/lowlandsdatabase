@@ -1,0 +1,53 @@
+ALTER TABLE HomeStudent ADD CONSTRAINT Key_Deposit_Y_or_N
+CHECK(KeyDepositPaid IN ('Y','N'));
+
+
+
+ALTER TABLE Attendance ADD CONSTRAINT Allowed_Attendance_Codes
+CHECK(AttendanceCode IN ('P','A','L','Q','E','T'));
+
+
+
+
+ALTER TABLE MonthlyPayment ADD CONSTRAINT Tax_Within_Bounds 
+CHECK (Tax >= 0 AND Tax <= ((GrossPay - AbsenceDeductions)*0.45));
+
+ALTER TABLE MonthlyPayment ADD CONSTRAINT Nat_Ins_Within_Bounds 
+CHECK (NatInsurance >= 0 AND NatInsurance <= ((GrossPay - AbsenceDeductions)*0.12));
+
+ALTER TABLE MonthlyPayment ADD CONSTRAINT Absence_Deduct_Within_Bounds 
+CHECK (AbsenceDeductions >= 0 AND AbsenceDeductions < GrossPay);
+
+
+
+
+ALTER TABLE Academic ADD CONSTRAINT Salary_Not_Negative
+CHECK (Salary >= 0);
+
+ALTER TABLE MonthlyPayment ADD CONSTRAINT Gross_Pay_Not_Negative 
+CHECK (GrossPay >= 0);
+
+ALTER TABLE Department ADD CONSTRAINT Dep_Salary_Not_Negative
+CHECK (Salary >= 0);
+
+ALTER TABLE Student ADD CONSTRAINT Fees_Paid_Not_Negative
+CHECK (FeesPaid >= 0);
+
+ALTER TABLE StudentCode ADD CONSTRAINT Fee_Cost_Not_Negative
+CHECK (FeeCost >= 0);
+
+ALTER TABLE Skills ADD CONSTRAINT Bonus_Not_Negative
+CHECK (MonthlyBonus >= 0);
+
+
+
+ALTER TABLE StaffMember ADD CONSTRAINT Either_Phone_or_Email_Details
+CHECK (Telephone is not null or Email is not null);
+
+ALTER TABLE Student ADD CONSTRAINT Need_Phone_or_Email_Details
+CHECK (Telephone is not null or Email is not null);
+
+
+
+ALTER TABLE Absence ADD CONSTRAINT End_Date_After_Start_Date
+CHECK (EndDate >= StartDate);
